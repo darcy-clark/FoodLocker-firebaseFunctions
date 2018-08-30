@@ -8,12 +8,16 @@ admin.initializeApp();
 
 exports.onNewOrder = functions.database.ref('/orders/{id}')
     .onCreate((snapshot, context) => {
-      console.log('New Order!');
+
+      console.log(snapshot.val());
+      var order = snapshot.val();
+      delete order['timestamp'];
+      console.log(order);
 
       var message = {
         notification: {
-          title: 'Welcome!',
-          body: 'You are Mexican'
+          title: 'New Order',
+          body: order.box + ' for ' + order.user
         },
         topic: "volunteer"
       };

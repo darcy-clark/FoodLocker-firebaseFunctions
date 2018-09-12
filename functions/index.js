@@ -9,10 +9,8 @@ admin.initializeApp();
 exports.onNewOrder = functions.database.ref('/orders/{id}')
     .onCreate((snapshot, context) => {
 
-      console.log(snapshot.val());
       var order = snapshot.val();
       delete order['timestamp'];
-      console.log(order);
 
       var message = {
         notification: {
@@ -24,12 +22,40 @@ exports.onNewOrder = functions.database.ref('/orders/{id}')
 
       return admin.messaging().send(message)
           .then((response) => {
-            console.log('Notification has been sent');
             return response;
           })
           .catch((error) => {
-            console.log('We encountered an error');
             console.log(error);
           });
     });
+
+exports.login = functions.https.onCall((user, context) => {
+
+  var type;
+
+  return admin.database().ref('users/' + user.username).once('value')
+      .then((snapshot) => {
+        if (!snapshot.exists()) {
+          throw new functions.https.HttpsError('not-found', 'User does not exist', null);
+        }
+        if (snapshot.val().passhash !== user.passhash) {
+          throw new functions.https.HttpsError('permission-denied', 'Incorrect password', null);
+        }
+        admin.database().ref('users/' + user.username + '/messagingToken')
+            .set(user.messagingToken);
+        type = snapshot.val().type;
+        return admin.auth().createCustomToken(user.username);
+      })
+      .then((token) => {
+        return {
+          token: token,
+          username: user.username,
+          type: type
+        };
+      })
+      .catch((error) => {
+        console.log(error);
+        throw error;
+      });
+});
 

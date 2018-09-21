@@ -17,7 +17,7 @@ exports.onNewOrder = functions.database.ref('/orders/{id}')
           title: 'New Order',
           body: order.box + ' for ' + order.user
         },
-        topic: "volunteer"
+        topic: 'volunteer'
       };
 
       return admin.messaging().send(message)
@@ -28,6 +28,30 @@ exports.onNewOrder = functions.database.ref('/orders/{id}')
             console.log(error);
           });
     });
+
+exports.onUpdateOrder = functions.database.ref('/orders/{id}')
+    .onUpdate((snapshot, context) => {
+
+      var order = snapshot.after.val();
+      if (order.status === 'ACCEPTED') {
+        var message = {
+          notification: {
+            title: 'Accepted Order',
+            body: 'Order from ' + order.user + ' accepted by ' + order.volunteer
+          },
+          topic: 'volunteer'
+        };
+
+        return admin.messaging().send(message)
+            .then((response) => {
+              return response;
+            })
+            .catch((error) => {
+              console.log(error);
+            });
+      }
+    });
+
 
 exports.login = functions.https.onCall((user, context) => {
 
